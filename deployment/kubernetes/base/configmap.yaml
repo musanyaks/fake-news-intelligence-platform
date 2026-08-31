@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fakenews-config
+  namespace: fakenews
+data:
+  APP_ENV: "production"
+  API_HOST: "0.0.0.0"
+  API_PORT: "8000"
+  LOG_LEVEL: "INFO"
+  KAFKA_TOPIC_NEWS: "news-articles"
+  MLFLOW_EXPERIMENT_NAME: "fake-news-detection"

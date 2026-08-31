@@ -1,0 +1,40 @@
+project_name: "Fake News Detection"
+datasets:
+  reference: "data/processed/reference.parquet"
+  current: "data/processed/current.parquet"
+
+column_mapping:
+  target: "label"
+  prediction: "prediction"
+  numerical_features:
+    - "flesch_reading_ease"
+    - "lexical_diversity"
+    - "sentiment_compound"
+    - "confidence"
+  categorical_features:
+    - "source"
+    - "category"
+
+tests:
+  - test_name: "TestNumberOfRows"
+    params:
+      gt: 1000
+  - test_name: "TestColumnDrift"
+    params:
+      column_name: "confidence"
+      stattest: "ks"
+      psi_threshold: 0.2
+  - test_name: "TestPredictionDrift"
+    params:
+      stattest: "chi_square"
+      threshold: 0.1
+
+reports:
+  - report_name: "data_drift"
+    metrics:
+      - "DatasetDriftMetric"
+      - "DataDriftTable"
+  - report_name: "model_performance"
+    metrics:
+      - "ClassificationQualityMetric"
+      - "ClassificationConfusionMatrix"
