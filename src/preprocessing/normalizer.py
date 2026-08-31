@@ -16,13 +16,16 @@ class TextNormalizer:
 
     @staticmethod
     def normalize_quotes(text: str) -> str:
-        text = re.sub(r"[""]", '"', text)
-        text = re.sub(r"['']", "'", text)
+        text = text.replace(chr(8220), '"').replace(chr(8221), '"')
+        text = text.replace(chr(8216), "'").replace(chr(8217), "'")
         return text
 
     @staticmethod
     def normalize_dashes(text: str) -> str:
-        return re.sub(r"[–—−]", "-", text)
+        text = text.replace(chr(8211), "-")  # en dash
+        text = text.replace(chr(8212), "-")  # em dash
+        text = text.replace(chr(8722), "-")  # minus sign
+        return text
 
     @staticmethod
     def normalize(text: str) -> str:
