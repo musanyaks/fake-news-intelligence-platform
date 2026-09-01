@@ -1,4 +1,5 @@
 """Request logging middleware."""
+
 import time
 
 from fastapi import Request

@@ -1,4 +1,5 @@
 """News scraper for multiple sources."""
+
 import hashlib
 from datetime import datetime
 from typing import AsyncGenerator, List, Optional
@@ -32,9 +33,7 @@ class NewsScraper:
         if not self.session:
             raise RuntimeError("Scraper not initialized. Use async context manager.")
 
-        default_headers = {
-            "User-Agent": "FakeNewsIntelligenceBot/1.0 (Research Project)"
-        }
+        default_headers = {"User-Agent": "FakeNewsIntelligenceBot/1.0 (Research Project)"}
         if headers:
             default_headers.update(headers)
 

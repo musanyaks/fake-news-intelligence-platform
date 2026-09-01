@@ -1,4 +1,5 @@
 """End-to-end training pipeline."""
+
 from typing import Any, Dict
 
 import mlflow
@@ -95,11 +96,13 @@ class TrainingPipeline:
 
             train_df, val_df, test_df = self.split_data(df)
 
-            mlflow.log_params({
-                "train_size": len(train_df),
-                "val_size": len(val_df),
-                "test_size": len(test_df),
-            })
+            mlflow.log_params(
+                {
+                    "train_size": len(train_df),
+                    "val_size": len(val_df),
+                    "test_size": len(test_df),
+                }
+            )
 
             feature_pipeline = FeaturePipeline()
             X_train = feature_pipeline.fit_transform(train_df["clean_text"].tolist())

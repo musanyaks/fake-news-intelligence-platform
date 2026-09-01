@@ -1,4 +1,5 @@
 """Database utilities."""
+
 import os
 from contextlib import contextmanager
 from typing import Generator

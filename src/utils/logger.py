@@ -1,4 +1,5 @@
 """Logging utilities."""
+
 import logging
 import logging.config
 from pathlib import Path
@@ -24,6 +25,7 @@ class MLFlowHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         try:
             import mlflow
+
             msg = self.format(record)
             mlflow.log_param("log_message", msg)
         except ImportError:

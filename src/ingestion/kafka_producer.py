@@ -1,4 +1,5 @@
 """Kafka producer for streaming articles."""
+
 import json
 from typing import Optional
 

@@ -1,4 +1,5 @@
 """Real-time inference pipeline."""
+
 from typing import Dict, List
 
 import numpy as np
@@ -69,10 +70,12 @@ class InferencePipeline:
         results = []
         for proba in probas:
             prediction = int(np.argmax(proba))
-            results.append({
-                "prediction": prediction,
-                "label": "FAKE" if prediction == 1 else "REAL",
-                "confidence": float(proba[prediction]),
-                "probabilities": {"REAL": float(proba[0]), "FAKE": float(proba[1])},
-            })
+            results.append(
+                {
+                    "prediction": prediction,
+                    "label": "FAKE" if prediction == 1 else "REAL",
+                    "confidence": float(proba[prediction]),
+                    "probabilities": {"REAL": float(proba[0]), "FAKE": float(proba[1])},
+                }
+            )
         return results

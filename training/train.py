@@ -1,4 +1,5 @@
 """Training script entrypoint."""
+
 import argparse
 
 from src.pipelines.training_pipeline import TrainingPipeline

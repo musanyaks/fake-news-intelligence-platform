@@ -1,4 +1,5 @@
 """Text tokenization utilities."""
+
 from typing import List
 
 from transformers import AutoTokenizer

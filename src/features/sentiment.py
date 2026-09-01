@@ -1,4 +1,5 @@
 """Sentiment feature extraction."""
+
 from typing import List
 
 import numpy as np
@@ -19,13 +20,15 @@ class SentimentFeatureExtractor(BaseEstimator, TransformerMixin):
         features = []
         for text in texts:
             scores = self.analyzer.polarity_scores(text)
-            features.append([
-                scores["neg"],
-                scores["neu"],
-                scores["pos"],
-                scores["compound"],
-                abs(scores["compound"]),
-            ])
+            features.append(
+                [
+                    scores["neg"],
+                    scores["neu"],
+                    scores["pos"],
+                    scores["compound"],
+                    abs(scores["compound"]),
+                ]
+            )
         return np.array(features)
 
     def get_feature_names(self) -> List[str]:

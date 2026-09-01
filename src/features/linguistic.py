@@ -1,4 +1,5 @@
 """Linguistic feature extraction."""
+
 from typing import List
 
 import numpy as np
@@ -13,6 +14,7 @@ class LinguisticFeatureExtractor(BaseEstimator, TransformerMixin):
         self._spacy_available = False
         try:
             import spacy
+
             self.nlp = spacy.load("en_core_web_sm")
             self._spacy_available = True
         except (ImportError, OSError):
@@ -53,6 +55,7 @@ class LinguisticFeatureExtractor(BaseEstimator, TransformerMixin):
 
         try:
             import textstat
+
             flesch_reading = textstat.flesch_reading_ease(text)
             flesch_kincaid = textstat.flesch_kincaid_grade(text)
             gunning_fog = textstat.gunning_fog(text)

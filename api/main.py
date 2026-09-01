@@ -1,4 +1,5 @@
 """FastAPI application entrypoint."""
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -11,6 +12,7 @@ from api.routes import health, model, prediction
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from src.utils.logger import setup_logging
+
     setup_logging()
     yield
 
@@ -38,4 +40,5 @@ app.include_router(model.router, prefix="/api/v1", tags=["Model Management"])
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

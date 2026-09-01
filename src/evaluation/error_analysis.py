@@ -1,4 +1,5 @@
 """Error analysis utilities."""
+
 from typing import Dict, List
 
 import numpy as np
@@ -11,13 +12,15 @@ class ErrorAnalyzer:
     def __init__(
         self, texts: List[str], y_true: np.ndarray, y_pred: np.ndarray, y_proba: np.ndarray
     ):
-        self.df = pd.DataFrame({
-            "text": texts,
-            "y_true": y_true,
-            "y_pred": y_pred,
-            "confidence": np.max(y_proba, axis=1),
-            "correct": y_true == y_pred,
-        })
+        self.df = pd.DataFrame(
+            {
+                "text": texts,
+                "y_true": y_true,
+                "y_pred": y_pred,
+                "confidence": np.max(y_proba, axis=1),
+                "correct": y_true == y_pred,
+            }
+        )
 
     def get_misclassified(self, n: int = 10) -> pd.DataFrame:
         misclassified = self.df[~self.df["correct"]].copy()

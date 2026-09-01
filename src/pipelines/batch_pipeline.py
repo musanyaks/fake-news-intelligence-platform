@@ -1,4 +1,5 @@
 """Batch processing pipeline for large datasets."""
+
 import pandas as pd
 
 from src.pipelines.inference_pipeline import InferencePipeline

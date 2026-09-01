@@ -1,4 +1,5 @@
 """Metadata feature extraction."""
+
 from typing import Dict, List
 
 import numpy as np
@@ -36,13 +37,15 @@ class MetadataFeatureExtractor(BaseEstimator, TransformerMixin):
             content_length = len(record.get("content", ""))
             title_content_ratio = title_length / max(content_length, 1)
 
-            features.append([
-                credibility,
-                has_author,
-                title_length,
-                content_length,
-                title_content_ratio,
-            ])
+            features.append(
+                [
+                    credibility,
+                    has_author,
+                    title_length,
+                    content_length,
+                    title_content_ratio,
+                ]
+            )
         return np.array(features)
 
     def get_feature_names(self) -> List[str]:

@@ -1,4 +1,5 @@
 """Prediction endpoints."""
+
 from fastapi import APIRouter, HTTPException
 
 from api.schemas.prediction import BatchPredictionRequest, PredictionRequest, PredictionResponse

@@ -1,4 +1,5 @@
 """Text normalization utilities."""
+
 import unicodedata
 
 

@@ -1,4 +1,5 @@
 """Feature pipeline orchestration."""
+
 from typing import List
 
 import numpy as np
@@ -13,13 +14,20 @@ class FeaturePipeline:
     """Orchestrates all feature extractors."""
 
     def __init__(self):
-        self.pipeline = Pipeline([
-            ("features", FeatureUnion([
-                ("linguistic", LinguisticFeatureExtractor()),
-                ("sentiment", SentimentFeatureExtractor()),
-            ])),
-            ("scaler", StandardScaler()),
-        ])
+        self.pipeline = Pipeline(
+            [
+                (
+                    "features",
+                    FeatureUnion(
+                        [
+                            ("linguistic", LinguisticFeatureExtractor()),
+                            ("sentiment", SentimentFeatureExtractor()),
+                        ]
+                    ),
+                ),
+                ("scaler", StandardScaler()),
+            ]
+        )
 
     def fit_transform(self, texts: List[str]) -> np.ndarray:
         return self.pipeline.fit_transform(texts)

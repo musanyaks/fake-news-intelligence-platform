@@ -1,4 +1,5 @@
 """MLflow model registration."""
+
 import argparse
 
 import mlflow

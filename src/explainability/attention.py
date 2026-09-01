@@ -1,4 +1,5 @@
 """Attention-based explainability for transformers."""
+
 from typing import Dict, List
 
 import numpy as np
@@ -36,8 +37,7 @@ class AttentionExplainer:
         importance = np.array(result["token_importance"])
 
         mask = [
-            not t.startswith("<") and t not in ["[CLS]", "[SEP]", "</s>", "<s>"]
-            for t in tokens
+            not t.startswith("<") and t not in ["[CLS]", "[SEP]", "</s>", "<s>"] for t in tokens
         ]
         filtered_importance = importance[mask]
         filtered_tokens = [t for t, m in zip(tokens, mask) if m]

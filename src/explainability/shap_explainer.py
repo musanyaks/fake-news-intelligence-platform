@@ -1,4 +1,5 @@
 """SHAP-based explainability."""
+
 import numpy as np
 
 
@@ -9,10 +10,9 @@ class ShapExplainer:
         self.model = model
         try:
             import shap
+
             self.explainer = (
-                shap.Explainer(model, background_data)
-                if background_data
-                else shap.Explainer(model)
+                shap.Explainer(model, background_data) if background_data else shap.Explainer(model)
             )
         except ImportError:
             self.explainer = None
@@ -25,6 +25,7 @@ class ShapExplainer:
     def explain_text(self, text: str, tokenizer, model) -> dict:
         try:
             import shap
+
             explainer = shap.Explainer(model, tokenizer)
             shap_values = explainer([text])
             return {
