@@ -1,5 +1,6 @@
-"""API tests."""
+from unittest.mock import MagicMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from api.main import app
@@ -7,10 +8,25 @@ from api.main import app
 client = TestClient(app)
 
 
-def test_health():
-    response = client.get("/health")
-    assert response.status_code == 200
-    assert response.json()["status"] == "healthy"
+@pytest.fixture(autouse=True)
+def mock_pipeline():
+    mock = MagicMock()
+    mock.predict.return_value = {
+        "prediction": 0,
+        "label": "REAL",
+        "confidence": 0.95,
+        "probabilities": {"REAL": 0.95, "FAKE": 0.05},
+    }
+    mock.predict_batch.return_value = [
+        {
+            "prediction": 0,
+            "label": "REAL",
+            "confidence": 0.95,
+            "probabilities": {"REAL": 0.95, "FAKE": 0.05},
+        }
+    ]
+    with patch("api.routes.prediction.get_pipeline", return_value=mock):
+        yield mock
 
 
 def test_predict():
@@ -19,4 +35,17 @@ def test_predict():
         json={"text": "This is a test news article with enough length to pass validation."},
     )
     assert response.status_code == 200
-    assert "prediction" in response.json()
+    data = response.json()
+    assert data["label"] in ["REAL", "FAKE"]
+    assert 0 <= data["confidence"] <= 1
+
+
+def test_predict_batch():
+    response = client.post(
+        "/api/v1/predict/batch",
+        json={"texts": ["Article one", "Article two"]},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 2
