@@ -1,4 +1,6 @@
 """Model calibration utilities."""
+from typing import Optional
+
 import numpy as np
 from sklearn.isotonic import IsotonicRegression
 
@@ -6,20 +8,21 @@ from sklearn.isotonic import IsotonicRegression
 class ModelCalibrator:
     """Calibrate model probabilities."""
 
-    def __init__(self, method: str = "isotonic"):
+    def __init__(self, method: str = "isotonic") -> None:
         self.method = method
-        self.calibrator = None
+        self.calibrator: Optional[IsotonicRegression] = None
 
     def fit(self, y_true: np.ndarray, y_prob: np.ndarray) -> "ModelCalibrator":
         if self.method == "isotonic":
-            self.calibrator = IsotonicRegression(y_min=0, y_max=1, out_of_bounds="clip")
-            self.calibrator.fit(y_prob, y_true)
+            calibrator = IsotonicRegression(y_min=0, y_max=1, out_of_bounds="clip")
+            calibrator.fit(y_prob, y_true)
+            self.calibrator = calibrator
         return self
 
     def calibrate(self, y_prob: np.ndarray) -> np.ndarray:
         if self.calibrator is None:
             raise RuntimeError("Calibrator not fitted")
-        return self.calibrator.predict(y_prob)
+        return np.asarray(self.calibrator.predict(y_prob))
 
     @staticmethod
     def expected_calibration_error(

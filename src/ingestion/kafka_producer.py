@@ -1,9 +1,9 @@
 """Kafka producer for streaming articles."""
 
 import json
-from typing import Optional
+from typing import Any, Optional
 
-from kafka import KafkaProducer
+from kafka import KafkaProducer  # type: ignore[import-untyped]
 from src.ingestion.schemas import NewsArticle
 from src.utils.config import get_config
 from src.utils.logger import get_logger
@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 class ArticleProducer:
     """Kafka producer for news articles."""
 
-    def __init__(self, bootstrap_servers: Optional[str] = None, topic: Optional[str] = None):
+    def __init__(self, bootstrap_servers: Optional[str] = None, topic: Optional[str] = None) -> None:
         config = get_config()
         self.bootstrap_servers = bootstrap_servers or config.get(
             "ingestion.kafka.bootstrap_servers", "localhost:9092"

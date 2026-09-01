@@ -7,6 +7,7 @@ from typing import AsyncGenerator, List, Optional
 import aiohttp
 import feedparser
 from bs4 import BeautifulSoup
+from pydantic import HttpUrl
 
 from src.ingestion.schemas import NewsArticle, RawDocument
 from src.utils.logger import get_logger
@@ -17,15 +18,15 @@ logger = get_logger(__name__)
 class NewsScraper:
     """Asynchronous news scraper with multiple source support."""
 
-    def __init__(self, timeout: int = 30):
+    def __init__(self, timeout: int = 30) -> None:
         self.timeout = aiohttp.ClientTimeout(total=timeout)
         self.session: Optional[aiohttp.ClientSession] = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "NewsScraper":
         self.session = aiohttp.ClientSession(timeout=self.timeout)
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         if self.session:
             await self.session.close()
 
@@ -46,7 +47,7 @@ class NewsScraper:
                 return RawDocument(
                     raw_html=html,
                     extracted_text=text,
-                    url=url,
+                    url=HttpUrl(url),
                     headers=dict(response.headers),
                     status_code=response.status,
                 )
@@ -64,7 +65,7 @@ class NewsScraper:
                 title=entry.get("title", ""),
                 content=entry.get("summary", entry.get("description", "")),
                 source=feed.feed.get("title", "Unknown"),
-                source_url=entry.link,
+                source_url=HttpUrl(entry.link),
                 published_at=self._parse_date(entry.get("published")),
                 author=entry.get("author"),
                 tags=[tag.term for tag in entry.get("tags", [])],
@@ -93,7 +94,7 @@ class NewsScraper:
             title=title_text,
             content=content,
             source=url.split("/")[2],
-            source_url=url,
+            source_url=HttpUrl(url),
             scraped_at=datetime.utcnow(),
         )
 

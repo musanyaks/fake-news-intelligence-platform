@@ -1,6 +1,6 @@
 """Real-time inference pipeline."""
 
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -20,12 +20,12 @@ class InferencePipeline:
         self,
         model_path: str = "models/transformer",
         enable_explanation: bool = True,
-    ):
+    ) -> None:
         self.cleaner = TextCleaner()
         self.normalizer = TextNormalizer()
         self.model = TransformerModel(model_name=model_path)
         self.enable_explanation = enable_explanation
-        self.explainer = None
+        self.explainer: Optional[AttentionExplainer] = None
 
         if enable_explanation:
             try:
@@ -38,13 +38,13 @@ class InferencePipeline:
         text = self.cleaner.clean(text)
         return text
 
-    def predict(self, text: str) -> Dict:
+    def predict(self, text: str) -> Dict[str, Any]:
         processed = self.preprocess(text)
         proba = self.model.predict_proba([processed])[0]
         prediction = int(np.argmax(proba))
         confidence = float(proba[prediction])
 
-        result = {
+        result: Dict[str, Any] = {
             "prediction": prediction,
             "label": "FAKE" if prediction == 1 else "REAL",
             "confidence": confidence,
@@ -63,11 +63,11 @@ class InferencePipeline:
 
         return result
 
-    def predict_batch(self, texts: List[str]) -> List[Dict]:
+    def predict_batch(self, texts: List[str]) -> List[Dict[str, Any]]:
         processed = [self.preprocess(t) for t in texts]
         probas = self.model.predict_proba(processed)
 
-        results = []
+        results: List[Dict[str, Any]] = []
         for proba in probas:
             prediction = int(np.argmax(proba))
             results.append(
