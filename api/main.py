@@ -1,6 +1,7 @@
 """FastAPI application entrypoint."""
 
 from contextlib import asynccontextmanager
+from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,7 +11,7 @@ from api.routes import health, model, prediction
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     from src.utils.logger import setup_logging
 
     setup_logging()

@@ -4,20 +4,20 @@ import os
 from contextlib import contextmanager
 from typing import Generator
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import Engine, create_engine, text
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 Base = declarative_base()
 
 
-def get_engine():
+def get_engine() -> Engine:
     database_url = os.getenv(
         "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/fakenews"
     )
     return create_engine(database_url, pool_size=10, max_overflow=20)
 
 
-def get_session_factory():
+def get_session_factory() -> "sessionmaker[Session]":
     return sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
 
 

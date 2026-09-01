@@ -32,7 +32,7 @@ class EnsembleModel:
             predictions.append(proba * weight)
 
         avg_proba = np.mean(predictions, axis=0)
-        return np.argmax(avg_proba, axis=1)
+        return np.asarray(np.argmax(avg_proba, axis=1))
 
     def predict_proba(self, X_dict: Dict[str, Any]) -> np.ndarray:
         predictions = []
@@ -42,4 +42,4 @@ class EnsembleModel:
             predictions.append(proba * weight)
 
         total_weight = sum(self.weights.values()) if self.weights else len(self.models)
-        return np.sum(predictions, axis=0) / total_weight
+        return np.asarray(np.sum(predictions, axis=0) / total_weight)

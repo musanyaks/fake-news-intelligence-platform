@@ -10,7 +10,7 @@ pipeline = InferencePipeline(model_path="models/transformer", enable_explanation
 
 
 @router.post("/predict", response_model=PredictionResponse)
-async def predict(request: PredictionRequest):
+async def predict(request: PredictionRequest) -> PredictionResponse:
     try:
         result = pipeline.predict(request.text)
         return PredictionResponse(
@@ -25,7 +25,7 @@ async def predict(request: PredictionRequest):
 
 
 @router.post("/predict/batch")
-async def predict_batch(request: BatchPredictionRequest):
+async def predict_batch(request: BatchPredictionRequest) -> dict:
     try:
         results = pipeline.predict_batch(request.texts)
         return {"predictions": results, "count": len(results)}

@@ -56,7 +56,10 @@ class InferencePipeline:
 
         if self.enable_explanation and self.explainer:
             try:
-                explanation = self.explainer.get_top_attended_tokens(processed, top_k=5)
+                explanation = self.explainer.get_top_attended_tokens(
+                    processed,
+                    top_k=5,
+                )
                 result["explanation"] = explanation
             except Exception as e:
                 logger.warning(f"Explanation failed: {e}")
@@ -75,7 +78,10 @@ class InferencePipeline:
                     "prediction": prediction,
                     "label": "FAKE" if prediction == 1 else "REAL",
                     "confidence": float(proba[prediction]),
-                    "probabilities": {"REAL": float(proba[0]), "FAKE": float(proba[1])},
+                    "probabilities": {
+                        "REAL": float(proba[0]),
+                        "FAKE": float(proba[1]),
+                    },
                 }
             )
         return results

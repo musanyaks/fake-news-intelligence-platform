@@ -53,7 +53,7 @@ class Config:
             return os.getenv(env_var, default)
         return obj
 
-    def get(self, key: str, default: Any = None) -> Any:
+    def get(self, key: str, default: Optional[Any] = None) -> Any:
         keys = key.split(".")
         value = self._config
         for k in keys:

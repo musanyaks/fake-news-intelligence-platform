@@ -8,7 +8,7 @@ from src.utils.logger import get_logger, setup_logging
 logger = get_logger(__name__)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Train fake news detection models")
     parser.add_argument("--config", default="configs/config.yaml", help="Path to config file")
     parser.add_argument("--data", default="data/processed/train.csv", help="Path to training data")

@@ -1,6 +1,6 @@
 """Sentiment feature extraction."""
 
-from typing import List
+from typing import Any, List, Optional
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -10,10 +10,10 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 class SentimentFeatureExtractor(BaseEstimator, TransformerMixin):
     """Extract sentiment features."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.analyzer = SentimentIntensityAnalyzer()
 
-    def fit(self, X, y=None):
+    def fit(self, X: Any, y: Optional[Any] = None) -> "SentimentFeatureExtractor":
         return self
 
     def transform(self, texts: List[str]) -> np.ndarray:

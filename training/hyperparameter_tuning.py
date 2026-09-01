@@ -3,12 +3,13 @@
 import argparse
 
 import optuna
+from optuna.trial import Trial
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
 
 
-def objective(trial):
+def objective(trial: Trial) -> float:
     n_estimators = trial.suggest_int("n_estimators", 50, 500)
     max_depth = trial.suggest_int("max_depth", 3, 30)
     min_samples_split = trial.suggest_int("min_samples_split", 2, 20)
@@ -23,10 +24,10 @@ def objective(trial):
     )
 
     score = cross_val_score(clf, X, y, cv=5, scoring="f1_macro").mean()
-    return score
+    return float(score)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--trials", type=int, default=100)
     args = parser.parse_args()

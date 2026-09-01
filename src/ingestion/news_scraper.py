@@ -26,15 +26,28 @@ class NewsScraper:
         self.session = aiohttp.ClientSession(timeout=self.timeout)
         return self
 
-    async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+    async def __aexit__(
+        self,
+        exc_type: object,
+        exc_val: object,
+        exc_tb: object,
+    ) -> None:
         if self.session:
             await self.session.close()
 
-    async def fetch_url(self, url: str, headers: Optional[dict] = None) -> RawDocument:
+    async def fetch_url(
+        self,
+        url: str,
+        headers: Optional[dict] = None,
+    ) -> RawDocument:
         if not self.session:
-            raise RuntimeError("Scraper not initialized. Use async context manager.")
+            raise RuntimeError(
+                "Scraper not initialized. Use async context manager."
+            )
 
-        default_headers = {"User-Agent": "FakeNewsIntelligenceBot/1.0 (Research Project)"}
+        default_headers = {
+            "User-Agent": "FakeNewsIntelligenceBot/1.0 (Research Project)",
+        }
         if headers:
             default_headers.update(headers)
 
@@ -82,7 +95,11 @@ class NewsScraper:
         title = soup.find("title")
         title_text = title.get_text(strip=True) if title else ""
 
-        article_body = soup.find("article") or soup.find("main") or soup.find("body")
+        article_body = (
+            soup.find("article")
+            or soup.find("main")
+            or soup.find("body")
+        )
         content = (
             article_body.get_text(separator="\n", strip=True)
             if article_body
@@ -98,7 +115,10 @@ class NewsScraper:
             scraped_at=datetime.utcnow(),
         )
 
-    async def scrape_multiple(self, urls: List[str]) -> AsyncGenerator[NewsArticle, None]:
+    async def scrape_multiple(
+        self,
+        urls: List[str],
+    ) -> AsyncGenerator[NewsArticle, None]:
         for url in urls:
             try:
                 article = await self.scrape_article(url)
@@ -112,9 +132,15 @@ class NewsScraper:
         if not date_str:
             return None
         try:
-            return datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z")
+            return datetime.strptime(
+                date_str,
+                "%a, %d %b %Y %H:%M:%S %z",
+            )
         except ValueError:
             try:
-                return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S%z")
+                return datetime.strptime(
+                    date_str,
+                    "%Y-%m-%dT%H:%M:%S%z",
+                )
             except ValueError:
                 return None

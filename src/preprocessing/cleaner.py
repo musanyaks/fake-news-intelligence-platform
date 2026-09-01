@@ -2,6 +2,7 @@
 
 import re
 import string
+from typing import Optional
 
 from bs4 import BeautifulSoup
 
@@ -34,10 +35,10 @@ class TextCleaner:
         self.remove_stopwords = remove_stopwords
         self.min_token_length = min_token_length
         self.max_token_length = max_token_length
-        self._stop_words = None
+        self._stop_words: Optional[set] = None
 
     @property
-    def stop_words(self):
+    def stop_words(self) -> set:
         if self._stop_words is None:
             try:
                 import nltk

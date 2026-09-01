@@ -1,0 +1,781 @@
+diff --git a/api/main.py b/api/main.py
+index d72ecb2..bc9bcf2 100644
+--- a/api/main.py
++++ b/api/main.py
+@@ -1,6 +1,7 @@
+ """FastAPI application entrypoint."""
+ 
+ from contextlib import asynccontextmanager
++from typing import AsyncIterator
+ 
+ from fastapi import FastAPI
+ from fastapi.middleware.cors import CORSMiddleware
+@@ -10,7 +11,7 @@ from api.routes import health, model, prediction
+ 
+ 
+ @asynccontextmanager
+-async def lifespan(app: FastAPI):
++async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+     from src.utils.logger import setup_logging
+ 
+     setup_logging()
+diff --git a/api/middleware/logging.py b/api/middleware/logging.py
+index b747d03..bd86693 100644
+--- a/api/middleware/logging.py
++++ b/api/middleware/logging.py
+@@ -1,8 +1,9 @@
+ """Request logging middleware."""
+ 
+ import time
++from typing import Awaitable, Callable
+ 
+-from fastapi import Request
++from fastapi import Request, Response
+ from starlette.middleware.base import BaseHTTPMiddleware
+ 
+ from src.utils.logger import get_logger
+@@ -11,7 +12,9 @@ logger = get_logger(__name__)
+ 
+ 
+ class LoggingMiddleware(BaseHTTPMiddleware):
+-    async def dispatch(self, request: Request, call_next):
++    async def dispatch(
++        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
++    ) -> Response:
+         start_time = time.time()
+         response = await call_next(request)
+         process_time = time.time() - start_time
+diff --git a/api/routes/health.py b/api/routes/health.py
+index dbb3cf8..ec2787b 100644
+--- a/api/routes/health.py
++++ b/api/routes/health.py
+@@ -6,15 +6,15 @@ router = APIRouter()
+ 
+ 
+ @router.get("/health")
+-async def health_check():
++async def health_check() -> dict:
+     return {"status": "healthy", "version": "0.1.0"}
+ 
+ 
+ @router.get("/ready")
+-async def readiness_check():
++async def readiness_check() -> dict:
+     return {"status": "ready"}
+ 
+ 
+ @router.get("/live")
+-async def liveness_check():
++async def liveness_check() -> dict:
+     return {"status": "alive"}
+diff --git a/api/routes/model.py b/api/routes/model.py
+index 91c7a9c..7ed1f50 100644
+--- a/api/routes/model.py
++++ b/api/routes/model.py
+@@ -6,7 +6,7 @@ router = APIRouter()
+ 
+ 
+ @router.get("/model/info")
+-async def model_info():
++async def model_info() -> dict:
+     return {
+         "name": "fake-news-transformer",
+         "version": "1.0.0",
+@@ -16,7 +16,7 @@ async def model_info():
+ 
+ 
+ @router.get("/model/metrics")
+-async def model_metrics():
++async def model_metrics() -> dict:
+     return {
+         "accuracy": 0.94,
+         "f1_macro": 0.93,
+diff --git a/api/routes/prediction.py b/api/routes/prediction.py
+index a33e578..ab592b8 100644
+--- a/api/routes/prediction.py
++++ b/api/routes/prediction.py
+@@ -10,7 +10,7 @@ pipeline = InferencePipeline(model_path="models/transformer", enable_explanation
+ 
+ 
+ @router.post("/predict", response_model=PredictionResponse)
+-async def predict(request: PredictionRequest):
++async def predict(request: PredictionRequest) -> PredictionResponse:
+     try:
+         result = pipeline.predict(request.text)
+         return PredictionResponse(
+@@ -25,7 +25,7 @@ async def predict(request: PredictionRequest):
+ 
+ 
+ @router.post("/predict/batch")
+-async def predict_batch(request: BatchPredictionRequest):
++async def predict_batch(request: BatchPredictionRequest) -> dict:
+     try:
+         results = pipeline.predict_batch(request.texts)
+         return {"predictions": results, "count": len(results)}
+diff --git a/src/evaluation/evaluator.py b/src/evaluation/evaluator.py
+index 720bf55..39adcfb 100644
+--- a/src/evaluation/evaluator.py
++++ b/src/evaluation/evaluator.py
+@@ -1,6 +1,6 @@
+ """Model evaluation orchestrator."""
+ 
+-from typing import Any, Dict, List
++from typing import Any, Dict, List, Optional
+ 
+ import numpy as np
+ 
+@@ -10,16 +10,16 @@ from src.evaluation.metrics import compute_metrics, compute_per_class_metrics
+ class ModelEvaluator:
+     """Comprehensive model evaluator."""
+ 
+-    def __init__(self, class_names: List[str] = None):
++    def __init__(self, class_names: Optional[List[str]] = None):
+         self.class_names = class_names or ["REAL", "FAKE"]
+-        self.results = {}
++        self.results: Dict[str, Dict[str, Any]] = {}
+ 
+     def evaluate(
+         self,
+         model_name: str,
+         y_true: np.ndarray,
+         y_pred: np.ndarray,
+-        y_proba: np.ndarray = None,
++        y_proba: Optional[np.ndarray] = None,
+     ) -> Dict[str, Any]:
+         metrics = compute_metrics(y_true, y_pred, y_proba)
+         per_class = compute_per_class_metrics(y_true, y_pred, self.class_names)
+@@ -46,7 +46,7 @@ class ModelEvaluator:
+ 
+         return comparison
+ 
+-    def get_best_model(self, metric: str = "f1_macro") -> str:
++    def get_best_model(self, metric: str = "f1_macro") -> Optional[str]:
+         best_score = -1
+         best_model = None
+         for name, res in self.results.items():
+diff --git a/src/evaluation/metrics.py b/src/evaluation/metrics.py
+index bd49e8d..c32fa39 100644
+--- a/src/evaluation/metrics.py
++++ b/src/evaluation/metrics.py
+@@ -1,6 +1,6 @@
+ """Custom and standard metrics."""
+ 
+-from typing import Dict
++from typing import Any, Dict, List, Optional
+ 
+ import numpy as np
+ from sklearn.metrics import (
+@@ -14,7 +14,9 @@ from sklearn.metrics import (
+ )
+ 
+ 
+-def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray, y_proba: np.ndarray = None) -> Dict:
++def compute_metrics(
++    y_true: np.ndarray, y_pred: np.ndarray, y_proba: Optional[np.ndarray] = None
++) -> Dict[str, Any]:
+     metrics = {
+         "accuracy": accuracy_score(y_true, y_pred),
+         "precision_macro": precision_score(y_true, y_pred, average="macro", zero_division=0),
+@@ -40,9 +42,9 @@ def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray, y_proba: np.ndarray
+ 
+ 
+ def compute_per_class_metrics(
+-    y_true: np.ndarray, y_pred: np.ndarray, class_names: list = None
+-) -> Dict:
++    y_true: np.ndarray, y_pred: np.ndarray, class_names: Optional[List] = None
++) -> Dict[str, Any]:
+     from sklearn.metrics import classification_report
+ 
+     report = classification_report(y_true, y_pred, target_names=class_names, output_dict=True)
+-    return report
++    return dict(report)
+diff --git a/src/explainability/shap_explainer.py b/src/explainability/shap_explainer.py
+index 72814b2..6d9097d 100644
+--- a/src/explainability/shap_explainer.py
++++ b/src/explainability/shap_explainer.py
+@@ -1,12 +1,14 @@
+ """SHAP-based explainability."""
+ 
++from typing import Any, Optional
++
+ import numpy as np
+ 
+ 
+ class ShapExplainer:
+     """Wrapper for SHAP explanations."""
+ 
+-    def __init__(self, model, background_data=None):
++    def __init__(self, model: Any, background_data: Optional[Any] = None):
+         self.model = model
+         try:
+             import shap
+@@ -17,12 +19,12 @@ class ShapExplainer:
+         except ImportError:
+             self.explainer = None
+ 
+-    def explain(self, X: np.ndarray):
++    def explain(self, X: np.ndarray) -> Any:
+         if self.explainer is None:
+             raise RuntimeError("SHAP not available")
+         return self.explainer(X)
+ 
+-    def explain_text(self, text: str, tokenizer, model) -> dict:
++    def explain_text(self, text: str, tokenizer: Any, model: Any) -> dict:
+         try:
+             import shap
+ 
+diff --git a/src/features/feature_pipeline.py b/src/features/feature_pipeline.py
+index 93dfcb5..84c4620 100644
+--- a/src/features/feature_pipeline.py
++++ b/src/features/feature_pipeline.py
+@@ -1,6 +1,6 @@
+ """Feature pipeline orchestration."""
+ 
+-from typing import List
++from typing import Any, List, Optional
+ 
+ import numpy as np
+ from sklearn.pipeline import FeatureUnion, Pipeline
+@@ -13,7 +13,7 @@ from src.features.sentiment import SentimentFeatureExtractor
+ class FeaturePipeline:
+     """Orchestrates all feature extractors."""
+ 
+-    def __init__(self):
++    def __init__(self) -> None:
+         self.pipeline = Pipeline(
+             [
+                 (
+@@ -30,11 +30,11 @@ class FeaturePipeline:
+         )
+ 
+     def fit_transform(self, texts: List[str]) -> np.ndarray:
+-        return self.pipeline.fit_transform(texts)
++        return np.asarray(self.pipeline.fit_transform(texts))
+ 
+     def transform(self, texts: List[str]) -> np.ndarray:
+-        return self.pipeline.transform(texts)
++        return np.asarray(self.pipeline.transform(texts))
+ 
+-    def fit(self, texts: List[str], y=None):
++    def fit(self, texts: List[str], y: Optional[Any] = None) -> "FeaturePipeline":
+         self.pipeline.fit(texts, y)
+         return self
+diff --git a/src/features/linguistic.py b/src/features/linguistic.py
+index 81d36b1..7e5db9b 100644
+--- a/src/features/linguistic.py
++++ b/src/features/linguistic.py
+@@ -1,6 +1,6 @@
+ """Linguistic feature extraction."""
+ 
+-from typing import List
++from typing import Any, List, Optional
+ 
+ import numpy as np
+ from sklearn.base import BaseEstimator, TransformerMixin
+@@ -9,8 +9,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
+ class LinguisticFeatureExtractor(BaseEstimator, TransformerMixin):
+     """Extract linguistic features from text."""
+ 
+-    def __init__(self):
+-        self.nlp = None
++    def __init__(self) -> None:
++        self.nlp: Optional[Any] = None
+         self._spacy_available = False
+         try:
+             import spacy
+@@ -20,7 +20,7 @@ class LinguisticFeatureExtractor(BaseEstimator, TransformerMixin):
+         except (ImportError, OSError):
+             pass
+ 
+-    def fit(self, X, y=None):
++    def fit(self, X: Any, y: Optional[Any] = None) -> "LinguisticFeatureExtractor":
+         return self
+ 
+     def transform(self, texts: List[str]) -> np.ndarray:
+diff --git a/src/features/metadata.py b/src/features/metadata.py
+index 78b3b13..79e20e8 100644
+--- a/src/features/metadata.py
++++ b/src/features/metadata.py
+@@ -1,6 +1,6 @@
+ """Metadata feature extraction."""
+ 
+-from typing import Dict, List
++from typing import Any, Dict, List, Optional
+ 
+ import numpy as np
+ from sklearn.base import BaseEstimator, TransformerMixin
+@@ -9,7 +9,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
+ class MetadataFeatureExtractor(BaseEstimator, TransformerMixin):
+     """Extract metadata-based features."""
+ 
+-    def __init__(self):
++    def __init__(self) -> None:
+         self.source_credibility_db = self._load_credibility_db()
+ 
+     def _load_credibility_db(self) -> Dict[str, float]:
+@@ -21,7 +21,7 @@ class MetadataFeatureExtractor(BaseEstimator, TransformerMixin):
+             "unknown": 0.50,
+         }
+ 
+-    def fit(self, X, y=None):
++    def fit(self, X: Any, y: Optional[Any] = None) -> "MetadataFeatureExtractor":
+         return self
+ 
+     def transform(self, records: List[Dict]) -> np.ndarray:
+diff --git a/src/features/sentiment.py b/src/features/sentiment.py
+index 6472c46..433b17e 100644
+--- a/src/features/sentiment.py
++++ b/src/features/sentiment.py
+@@ -1,6 +1,6 @@
+ """Sentiment feature extraction."""
+ 
+-from typing import List
++from typing import Any, List, Optional
+ 
+ import numpy as np
+ from sklearn.base import BaseEstimator, TransformerMixin
+@@ -10,10 +10,10 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+ class SentimentFeatureExtractor(BaseEstimator, TransformerMixin):
+     """Extract sentiment features."""
+ 
+-    def __init__(self):
++    def __init__(self) -> None:
+         self.analyzer = SentimentIntensityAnalyzer()
+ 
+-    def fit(self, X, y=None):
++    def fit(self, X: Any, y: Optional[Any] = None) -> "SentimentFeatureExtractor":
+         return self
+ 
+     def transform(self, texts: List[str]) -> np.ndarray:
+diff --git a/src/ingestion/kafka_producer.py b/src/ingestion/kafka_producer.py
+index 85308a0..2d4d576 100644
+--- a/src/ingestion/kafka_producer.py
++++ b/src/ingestion/kafka_producer.py
+@@ -3,7 +3,7 @@
+ import json
+ from typing import Optional
+ 
+-from kafka import KafkaProducer
++from kafka import KafkaProducer  # type: ignore[attr-defined]
+ from src.ingestion.schemas import NewsArticle
+ from src.utils.config import get_config
+ from src.utils.logger import get_logger
+diff --git a/src/ingestion/news_scraper.py b/src/ingestion/news_scraper.py
+index 7584b01..8ff404c 100644
+--- a/src/ingestion/news_scraper.py
++++ b/src/ingestion/news_scraper.py
+@@ -21,11 +21,11 @@ class NewsScraper:
+         self.timeout = aiohttp.ClientTimeout(total=timeout)
+         self.session: Optional[aiohttp.ClientSession] = None
+ 
+-    async def __aenter__(self):
++    async def __aenter__(self) -> "NewsScraper":
+         self.session = aiohttp.ClientSession(timeout=self.timeout)
+         return self
+ 
+-    async def __aexit__(self, exc_type, exc_val, exc_tb):
++    async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+         if self.session:
+             await self.session.close()
+ 
+@@ -46,7 +46,7 @@ class NewsScraper:
+                 return RawDocument(
+                     raw_html=html,
+                     extracted_text=text,
+-                    url=url,
++                    url=url,  # type: ignore[arg-type]  # pydantic coerces str -> HttpUrl
+                     headers=dict(response.headers),
+                     status_code=response.status,
+                 )
+@@ -93,7 +93,7 @@ class NewsScraper:
+             title=title_text,
+             content=content,
+             source=url.split("/")[2],
+-            source_url=url,
++            source_url=url,  # type: ignore[arg-type]  # pydantic coerces str -> HttpUrl
+             scraped_at=datetime.utcnow(),
+         )
+ 
+diff --git a/src/models/baseline.py b/src/models/baseline.py
+index ac2f461..e032408 100644
+--- a/src/models/baseline.py
++++ b/src/models/baseline.py
+@@ -1,5 +1,5 @@
+ """Baseline sklearn models."""
+-from typing import Any, Dict
++from typing import Any, Dict, Optional
+ 
+ import numpy as np
+ from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
+@@ -10,12 +10,14 @@ from sklearn.metrics import classification_report, f1_score
+ class BaselineModel:
+     """Wrapper for traditional ML models."""
+ 
+-    def __init__(self, model_type: str = "logistic_regression", params: Dict[str, Any] = None):
++    def __init__(
++        self, model_type: str = "logistic_regression", params: Optional[Dict[str, Any]] = None
++    ):
+         self.model_type = model_type
+         self.params = params or {}
+         self.model = self._build_model()
+ 
+-    def _build_model(self):
++    def _build_model(self) -> Any:
+         if self.model_type == "logistic_regression":
+             return LogisticRegression(**self.params)
+         elif self.model_type == "random_forest":
+@@ -30,11 +32,11 @@ class BaselineModel:
+         return self
+ 
+     def predict(self, X: np.ndarray) -> np.ndarray:
+-        return self.model.predict(X)
++        return np.asarray(self.model.predict(X))
+ 
+     def predict_proba(self, X: np.ndarray) -> np.ndarray:
+         if hasattr(self.model, "predict_proba"):
+-            return self.model.predict_proba(X)
++            return np.asarray(self.model.predict_proba(X))
+         raise AttributeError(f"{self.model_type} does not support probability predictions")
+ 
+     def evaluate(self, X: np.ndarray, y: np.ndarray) -> Dict[str, Any]:
+diff --git a/src/models/calibration.py b/src/models/calibration.py
+index 1bf8a84..ee05e6c 100644
+--- a/src/models/calibration.py
++++ b/src/models/calibration.py
+@@ -1,4 +1,6 @@
+ """Model calibration utilities."""
++from typing import Optional
++
+ import numpy as np
+ from sklearn.isotonic import IsotonicRegression
+ 
+@@ -8,7 +10,7 @@ class ModelCalibrator:
+ 
+     def __init__(self, method: str = "isotonic"):
+         self.method = method
+-        self.calibrator = None
++        self.calibrator: Optional[IsotonicRegression] = None
+ 
+     def fit(self, y_true: np.ndarray, y_prob: np.ndarray) -> "ModelCalibrator":
+         if self.method == "isotonic":
+@@ -19,7 +21,7 @@ class ModelCalibrator:
+     def calibrate(self, y_prob: np.ndarray) -> np.ndarray:
+         if self.calibrator is None:
+             raise RuntimeError("Calibrator not fitted")
+-        return self.calibrator.predict(y_prob)
++        return np.asarray(self.calibrator.predict(y_prob))
+ 
+     @staticmethod
+     def expected_calibration_error(
+diff --git a/src/models/ensemble.py b/src/models/ensemble.py
+index 16307e7..d517de4 100644
+--- a/src/models/ensemble.py
++++ b/src/models/ensemble.py
+@@ -32,7 +32,7 @@ class EnsembleModel:
+             predictions.append(proba * weight)
+ 
+         avg_proba = np.mean(predictions, axis=0)
+-        return np.argmax(avg_proba, axis=1)
++        return np.asarray(np.argmax(avg_proba, axis=1))
+ 
+     def predict_proba(self, X_dict: Dict[str, Any]) -> np.ndarray:
+         predictions = []
+@@ -42,4 +42,4 @@ class EnsembleModel:
+             predictions.append(proba * weight)
+ 
+         total_weight = sum(self.weights.values()) if self.weights else len(self.models)
+-        return np.sum(predictions, axis=0) / total_weight
++        return np.asarray(np.sum(predictions, axis=0) / total_weight)
+diff --git a/src/models/tfidf_model.py b/src/models/tfidf_model.py
+index 4a18132..5501966 100644
+--- a/src/models/tfidf_model.py
++++ b/src/models/tfidf_model.py
+@@ -1,5 +1,5 @@
+ """TF-IDF based model."""
+-from typing import Any, Dict
++from typing import Any, Dict, Optional
+ 
+ import numpy as np
+ from sklearn.feature_extraction.text import TfidfVectorizer
+@@ -14,7 +14,7 @@ class TfidfModel:
+         self,
+         max_features: int = 15000,
+         ngram_range: tuple = (1, 3),
+-        classifier_params: Dict[str, Any] = None,
++        classifier_params: Optional[Dict[str, Any]] = None,
+     ):
+         self.pipeline = Pipeline([
+             ("tfidf", TfidfVectorizer(
+@@ -42,10 +42,10 @@ class TfidfModel:
+         return self
+ 
+     def predict(self, texts: list) -> np.ndarray:
+-        return self.pipeline.predict(texts)
++        return np.asarray(self.pipeline.predict(texts))
+ 
+     def predict_proba(self, texts: list) -> np.ndarray:
+-        return self.pipeline.predict_proba(texts)
++        return np.asarray(self.pipeline.predict_proba(texts))
+ 
+     def evaluate(self, texts: list, labels: np.ndarray) -> Dict[str, Any]:
+         from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+diff --git a/src/models/transformer.py b/src/models/transformer.py
+index 13de04e..7be5058 100644
+--- a/src/models/transformer.py
++++ b/src/models/transformer.py
+@@ -1,5 +1,5 @@
+ """Transformer-based fake news detection model."""
+-from typing import Dict, List, Optional
++from typing import Any, Dict, List, Optional
+ 
+ import numpy as np
+ import torch
+@@ -33,12 +33,14 @@ class TransformerModel:
+         ).to(self.device)
+ 
+     def tokenize(self, texts: List[str]) -> Dict:
+-        return self.tokenizer(
+-            texts,
+-            truncation=True,
+-            padding=True,
+-            max_length=self.max_length,
+-            return_tensors="pt",
++        return dict(
++            self.tokenizer(
++                texts,
++                truncation=True,
++                padding=True,
++                max_length=self.max_length,
++                return_tensors="pt",
++            )
+         )
+ 
+     def train(
+@@ -56,13 +58,13 @@ class TransformerModel:
+         train_encodings["labels"] = torch.tensor(train_labels)
+ 
+         class FakeNewsDataset(torch.utils.data.Dataset):
+-            def __init__(self, encodings):
++            def __init__(self, encodings: Dict):
+                 self.encodings = encodings
+ 
+-            def __getitem__(self, idx):
++            def __getitem__(self, idx: int) -> Dict:
+                 return {key: val[idx] for key, val in self.encodings.items()}
+ 
+-            def __len__(self):
++            def __len__(self) -> int:
+                 return len(self.encodings["input_ids"])
+ 
+         train_dataset = FakeNewsDataset(train_encodings)
+@@ -74,7 +76,6 @@ class TransformerModel:
+             per_device_eval_batch_size=batch_size * 2,
+             learning_rate=learning_rate,
+             weight_decay=0.01,
+-            logging_dir=f"{output_dir}/logs",
+             logging_steps=100,
+             eval_strategy="epoch" if val_texts else "no",
+             save_strategy="epoch",
+@@ -82,7 +83,7 @@ class TransformerModel:
+             metric_for_best_model="f1",
+         )
+ 
+-        def compute_metrics(eval_pred):
++        def compute_metrics(eval_pred: Any) -> Dict[str, float]:
+             logits, labels = eval_pred
+             predictions = np.argmax(logits, axis=-1)
+             return {
+diff --git a/src/pipelines/inference_pipeline.py b/src/pipelines/inference_pipeline.py
+index 38ea392..9449f14 100644
+--- a/src/pipelines/inference_pipeline.py
++++ b/src/pipelines/inference_pipeline.py
+@@ -1,6 +1,6 @@
+ """Real-time inference pipeline."""
+ 
+-from typing import Dict, List
++from typing import Any, Dict, List
+ 
+ import numpy as np
+ 
+@@ -44,7 +44,7 @@ class InferencePipeline:
+         prediction = int(np.argmax(proba))
+         confidence = float(proba[prediction])
+ 
+-        result = {
++        result: Dict[str, Any] = {
+             "prediction": prediction,
+             "label": "FAKE" if prediction == 1 else "REAL",
+             "confidence": confidence,
+diff --git a/src/preprocessing/cleaner.py b/src/preprocessing/cleaner.py
+index 6829492..733c7c1 100644
+--- a/src/preprocessing/cleaner.py
++++ b/src/preprocessing/cleaner.py
+@@ -2,6 +2,7 @@
+ 
+ import re
+ import string
++from typing import Optional
+ 
+ from bs4 import BeautifulSoup
+ 
+@@ -34,10 +35,10 @@ class TextCleaner:
+         self.remove_stopwords = remove_stopwords
+         self.min_token_length = min_token_length
+         self.max_token_length = max_token_length
+-        self._stop_words = None
++        self._stop_words: Optional[set] = None
+ 
+     @property
+-    def stop_words(self):
++    def stop_words(self) -> set:
+         if self._stop_words is None:
+             try:
+                 import nltk
+diff --git a/src/preprocessing/tokenizer.py b/src/preprocessing/tokenizer.py
+index 7d31b02..0a3cf8e 100644
+--- a/src/preprocessing/tokenizer.py
++++ b/src/preprocessing/tokenizer.py
+@@ -13,25 +13,29 @@ class Tokenizer:
+         self.max_length = max_length
+ 
+     def encode(self, text: str) -> dict:
+-        return self.tokenizer(
+-            text,
+-            truncation=True,
+-            padding="max_length",
+-            max_length=self.max_length,
+-            return_tensors="pt",
++        return dict(
++            self.tokenizer(
++                text,
++                truncation=True,
++                padding="max_length",
++                max_length=self.max_length,
++                return_tensors="pt",
++            )
+         )
+ 
+     def encode_batch(self, texts: List[str]) -> dict:
+-        return self.tokenizer(
+-            texts,
+-            truncation=True,
+-            padding=True,
+-            max_length=self.max_length,
+-            return_tensors="pt",
++        return dict(
++            self.tokenizer(
++                texts,
++                truncation=True,
++                padding=True,
++                max_length=self.max_length,
++                return_tensors="pt",
++            )
+         )
+ 
+     def decode(self, token_ids: List[int], skip_special_tokens: bool = True) -> str:
+-        return self.tokenizer.decode(token_ids, skip_special_tokens=skip_special_tokens)
++        return str(self.tokenizer.decode(token_ids, skip_special_tokens=skip_special_tokens))
+ 
+     def tokenize(self, text: str) -> List[str]:
+         return self.tokenizer.tokenize(text)
+diff --git a/src/utils/database.py b/src/utils/database.py
+index 5e0d413..f33063f 100644
+--- a/src/utils/database.py
++++ b/src/utils/database.py
+@@ -4,20 +4,20 @@ import os
+ from contextlib import contextmanager
+ from typing import Generator
+ 
+-from sqlalchemy import create_engine, text
+-from sqlalchemy.orm import declarative_base, sessionmaker
++from sqlalchemy import Engine, create_engine, text
++from sqlalchemy.orm import Session, declarative_base, sessionmaker
+ 
+ Base = declarative_base()
+ 
+ 
+-def get_engine():
++def get_engine() -> Engine:
+     database_url = os.getenv(
+         "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/fakenews"
+     )
+     return create_engine(database_url, pool_size=10, max_overflow=20)
+ 
+ 
+-def get_session_factory():
++def get_session_factory() -> "sessionmaker[Session]":
+     return sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
+ 
+ 
+diff --git a/training/hyperparameter_tuning.py b/training/hyperparameter_tuning.py
+index 94287b4..054041a 100644
+--- a/training/hyperparameter_tuning.py
++++ b/training/hyperparameter_tuning.py
+@@ -3,12 +3,13 @@
+ import argparse
+ 
+ import optuna
++from optuna.trial import Trial
+ from sklearn.datasets import make_classification
+ from sklearn.ensemble import RandomForestClassifier
+ from sklearn.model_selection import cross_val_score
+ 
+ 
+-def objective(trial):
++def objective(trial: Trial) -> float:
+     n_estimators = trial.suggest_int("n_estimators", 50, 500)
+     max_depth = trial.suggest_int("max_depth", 3, 30)
+     min_samples_split = trial.suggest_int("min_samples_split", 2, 20)
+@@ -23,10 +24,10 @@ def objective(trial):
+     )
+ 
+     score = cross_val_score(clf, X, y, cv=5, scoring="f1_macro").mean()
+-    return score
++    return float(score)
+ 
+ 
+-def main():
++def main() -> None:
+     parser = argparse.ArgumentParser()
+     parser.add_argument("--trials", type=int, default=100)
+     args = parser.parse_args()
+diff --git a/training/register_model.py b/training/register_model.py
+index abbc356..f671bb8 100644
+--- a/training/register_model.py
++++ b/training/register_model.py
+@@ -1,11 +1,12 @@
+ """MLflow model registration."""
+ 
+ import argparse
++from typing import Any, Optional
+ 
+ import mlflow
+ 
+ 
+-def register(model_path: str, model_name: str, run_id: str = None):
++def register(model_path: str, model_name: str, run_id: Optional[str] = None) -> Any:
+     mlflow.set_tracking_uri("http://localhost:5000")
+ 
+     if run_id:
+@@ -17,7 +18,7 @@ def register(model_path: str, model_name: str, run_id: str = None):
+     return result
+ 
+ 
+-def main():
++def main() -> None:
+     parser = argparse.ArgumentParser()
+     parser.add_argument("--model-path", required=True)
+     parser.add_argument("--model-name", default="fake-news-model")
+diff --git a/training/train.py b/training/train.py
+index b5716fa..2fc26e3 100644
+--- a/training/train.py
++++ b/training/train.py
+@@ -8,7 +8,7 @@ from src.utils.logger import get_logger, setup_logging
+ logger = get_logger(__name__)
+ 
+ 
+-def main():
++def main() -> None:
+     parser = argparse.ArgumentParser(description="Train fake news detection models")
+     parser.add_argument("--config", default="configs/config.yaml", help="Path to config file")
+     parser.add_argument("--data", default="data/processed/train.csv", help="Path to training data")

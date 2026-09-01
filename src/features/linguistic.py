@@ -1,6 +1,6 @@
 """Linguistic feature extraction."""
 
-from typing import List
+from typing import Any, List, Optional
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -9,8 +9,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
 class LinguisticFeatureExtractor(BaseEstimator, TransformerMixin):
     """Extract linguistic features from text."""
 
-    def __init__(self):
-        self.nlp = None
+    def __init__(self) -> None:
+        self.nlp: Optional[Any] = None
         self._spacy_available = False
         try:
             import spacy
@@ -20,7 +20,7 @@ class LinguisticFeatureExtractor(BaseEstimator, TransformerMixin):
         except (ImportError, OSError):
             pass
 
-    def fit(self, X, y=None):
+    def fit(self, X: Any, y: Optional[Any] = None) -> "LinguisticFeatureExtractor":
         return self
 
     def transform(self, texts: List[str]) -> np.ndarray:

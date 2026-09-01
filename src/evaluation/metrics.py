@@ -1,6 +1,6 @@
 """Custom and standard metrics."""
 
-from typing import Dict
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 from sklearn.metrics import (
@@ -14,7 +14,9 @@ from sklearn.metrics import (
 )
 
 
-def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray, y_proba: np.ndarray = None) -> Dict:
+def compute_metrics(
+    y_true: np.ndarray, y_pred: np.ndarray, y_proba: Optional[np.ndarray] = None
+) -> Dict[str, Any]:
     metrics = {
         "accuracy": accuracy_score(y_true, y_pred),
         "precision_macro": precision_score(y_true, y_pred, average="macro", zero_division=0),
@@ -40,9 +42,9 @@ def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray, y_proba: np.ndarray 
 
 
 def compute_per_class_metrics(
-    y_true: np.ndarray, y_pred: np.ndarray, class_names: list = None
-) -> Dict:
+    y_true: np.ndarray, y_pred: np.ndarray, class_names: Optional[List] = None
+) -> Dict[str, Any]:
     from sklearn.metrics import classification_report
 
     report = classification_report(y_true, y_pred, target_names=class_names, output_dict=True)
-    return report
+    return dict(report)

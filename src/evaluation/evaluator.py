@@ -41,7 +41,8 @@ class ModelEvaluator:
         comparison: Dict[str, Dict[str, float]] = {}
         for metric in ["accuracy", "f1_macro", "precision_macro", "recall_macro"]:
             comparison[metric] = {
-                name: res["metrics"].get(metric, 0) for name, res in self.results.items()
+                name: res["metrics"].get(metric, 0)
+                for name, res in self.results.items()
             }
 
         return comparison

@@ -1,0 +1,53 @@
+diff --git a/src/ingestion/kafka_producer.py b/src/ingestion/kafka_producer.py
+index c815f8e..85308a0 100644
+--- a/src/ingestion/kafka_producer.py
++++ b/src/ingestion/kafka_producer.py
+@@ -4,7 +4,6 @@ import json
+ from typing import Optional
+ 
+ from kafka import KafkaProducer
+-
+ from src.ingestion.schemas import NewsArticle
+ from src.utils.config import get_config
+ from src.utils.logger import get_logger
+diff --git a/src/pipelines/inference_pipeline.py b/src/pipelines/inference_pipeline.py
+index ecabf4f..38ea392 100644
+--- a/src/pipelines/inference_pipeline.py
++++ b/src/pipelines/inference_pipeline.py
+@@ -5,9 +5,9 @@ from typing import Dict, List
+ import numpy as np
+ 
+ from src.explainability.attention import AttentionExplainer
++from src.models.transformer import TransformerModel
+ from src.preprocessing.cleaner import TextCleaner
+ from src.preprocessing.normalizer import TextNormalizer
+-from src.models.transformer import TransformerModel
+ from src.utils.logger import get_logger
+ 
+ logger = get_logger(__name__)
+diff --git a/src/pipelines/training_pipeline.py b/src/pipelines/training_pipeline.py
+index bce9d0c..8eb66c1 100644
+--- a/src/pipelines/training_pipeline.py
++++ b/src/pipelines/training_pipeline.py
+@@ -2,11 +2,11 @@
+ 
+ from typing import Any, Dict
+ 
+-import mlflow
+ import numpy as np
+ import pandas as pd
+ from sklearn.model_selection import train_test_split
+ 
++import mlflow
+ from src.evaluation.evaluator import ModelEvaluator
+ from src.features.feature_pipeline import FeaturePipeline
+ from src.models.baseline import BaselineModel
+@@ -79,7 +79,7 @@ class TrainingPipeline:
+         model = TransformerModel()
+         model.train(train_texts, y_train, val_texts, val_val, output_dir="models/transformer")
+         preds = model.predict(val_texts)
+-        from sklearn.metrics import f1_score, accuracy_score
++        from sklearn.metrics import accuracy_score, f1_score
+ 
+         results = {
+             "accuracy": accuracy_score(val_val, preds),

@@ -1,5 +1,5 @@
 """TF-IDF based model."""
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -14,7 +14,7 @@ class TfidfModel:
         self,
         max_features: int = 15000,
         ngram_range: tuple = (1, 3),
-        classifier_params: Dict[str, Any] = None,
+        classifier_params: Optional[Dict[str, Any]] = None,
     ):
         self.pipeline = Pipeline([
             ("tfidf", TfidfVectorizer(
@@ -42,10 +42,10 @@ class TfidfModel:
         return self
 
     def predict(self, texts: list) -> np.ndarray:
-        return self.pipeline.predict(texts)
+        return np.asarray(self.pipeline.predict(texts))
 
     def predict_proba(self, texts: list) -> np.ndarray:
-        return self.pipeline.predict_proba(texts)
+        return np.asarray(self.pipeline.predict_proba(texts))
 
     def evaluate(self, texts: list, labels: np.ndarray) -> Dict[str, Any]:
         from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score

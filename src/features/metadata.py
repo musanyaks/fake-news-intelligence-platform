@@ -1,6 +1,6 @@
 """Metadata feature extraction."""
 
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -9,7 +9,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 class MetadataFeatureExtractor(BaseEstimator, TransformerMixin):
     """Extract metadata-based features."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.source_credibility_db = self._load_credibility_db()
 
     def _load_credibility_db(self) -> Dict[str, float]:
@@ -21,7 +21,7 @@ class MetadataFeatureExtractor(BaseEstimator, TransformerMixin):
             "unknown": 0.50,
         }
 
-    def fit(self, X, y=None):
+    def fit(self, X: Any, y: Optional[Any] = None) -> "MetadataFeatureExtractor":
         return self
 
     def transform(self, records: List[Dict]) -> np.ndarray:

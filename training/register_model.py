@@ -1,11 +1,12 @@
 """MLflow model registration."""
 
 import argparse
+from typing import Any, Optional
 
 import mlflow
 
 
-def register(model_path: str, model_name: str, run_id: str = None):
+def register(model_path: str, model_name: str, run_id: Optional[str] = None) -> Any:
     mlflow.set_tracking_uri("http://localhost:5000")
 
     if run_id:
@@ -17,7 +18,7 @@ def register(model_path: str, model_name: str, run_id: str = None):
     return result
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-path", required=True)
     parser.add_argument("--model-name", default="fake-news-model")
