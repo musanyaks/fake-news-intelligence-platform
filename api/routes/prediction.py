@@ -1,33 +1,38 @@
-"""Prediction endpoints."""
+"""Prediction API routes."""
+
+from functools import lru_cache
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
-from api.schemas.prediction import BatchPredictionRequest, PredictionRequest, PredictionResponse
 from src.pipelines.inference_pipeline import InferencePipeline
 
 router = APIRouter()
-pipeline = InferencePipeline(model_path="models/transformer", enable_explanation=True)
 
 
-@router.post("/predict", response_model=PredictionResponse)
-async def predict(request: PredictionRequest) -> PredictionResponse:
+@lru_cache(maxsize=1)
+def get_pipeline() -> InferencePipeline:
+    """Lazy-load the inference pipeline."""
+    return InferencePipeline(
+        model_path="models/transformer",
+        enable_explanation=True,
+    )
+
+
+@router.post("/predict")
+def predict(text: str) -> dict[str, Any]:
     try:
-        result = pipeline.predict(request.text)
-        return PredictionResponse(
-            prediction=result["prediction"],
-            label=result["label"],
-            confidence=result["confidence"],
-            probabilities=result["probabilities"],
-            explanation=result.get("explanation"),
-        )
+        pipeline = get_pipeline()
+        result = pipeline.predict(text)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/predict/batch")
-async def predict_batch(request: BatchPredictionRequest) -> dict:
+def predict_batch(texts: list[str]) -> list[dict[str, Any]]:
     try:
-        results = pipeline.predict_batch(request.texts)
-        return {"predictions": results, "count": len(results)}
+        pipeline = get_pipeline()
+        return pipeline.predict_batch(texts)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
