@@ -3,7 +3,7 @@
 import json
 from typing import Optional
 
-from kafka import KafkaProducer  # type: ignore[import-untyped]
+from kafka import KafkaProducer  # type: ignore[attr-defined]
 from src.ingestion.schemas import NewsArticle
 from src.utils.config import get_config
 from src.utils.logger import get_logger
@@ -37,10 +37,7 @@ class ArticleProducer:
             retries=3,
             linger_ms=10,
         )
-        logger.info(
-            f"Kafka producer initialized: {self.bootstrap_servers}, "
-            f"topic={self.topic}"
-        )
+        logger.info(f"Kafka producer initialized: {self.bootstrap_servers}, " f"topic={self.topic}")
 
     def send_article(self, article: NewsArticle, key: Optional[str] = None) -> None:
         try:

@@ -41,9 +41,7 @@ class NewsScraper:
         headers: Optional[dict] = None,
     ) -> RawDocument:
         if not self.session:
-            raise RuntimeError(
-                "Scraper not initialized. Use async context manager."
-            )
+            raise RuntimeError("Scraper not initialized. Use async context manager.")
 
         default_headers = {
             "User-Agent": "FakeNewsIntelligenceBot/1.0 (Research Project)",
@@ -95,11 +93,7 @@ class NewsScraper:
         title = soup.find("title")
         title_text = title.get_text(strip=True) if title else ""
 
-        article_body = (
-            soup.find("article")
-            or soup.find("main")
-            or soup.find("body")
-        )
+        article_body = soup.find("article") or soup.find("main") or soup.find("body")
         content = (
             article_body.get_text(separator="\n", strip=True)
             if article_body
