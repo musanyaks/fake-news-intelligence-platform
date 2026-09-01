@@ -2,11 +2,11 @@
 
 from typing import Any, Dict
 
-import mlflow
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
+import mlflow
 from src.evaluation.evaluator import ModelEvaluator
 from src.features.feature_pipeline import FeaturePipeline
 from src.models.baseline import BaselineModel
@@ -79,7 +79,7 @@ class TrainingPipeline:
         model = TransformerModel()
         model.train(train_texts, y_train, val_texts, val_val, output_dir="models/transformer")
         preds = model.predict(val_texts)
-        from sklearn.metrics import f1_score, accuracy_score
+        from sklearn.metrics import accuracy_score, f1_score
 
         results = {
             "accuracy": accuracy_score(val_val, preds),

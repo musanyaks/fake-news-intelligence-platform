@@ -5,9 +5,9 @@ from typing import Dict, List
 import numpy as np
 
 from src.explainability.attention import AttentionExplainer
+from src.models.transformer import TransformerModel
 from src.preprocessing.cleaner import TextCleaner
 from src.preprocessing.normalizer import TextNormalizer
-from src.models.transformer import TransformerModel
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)

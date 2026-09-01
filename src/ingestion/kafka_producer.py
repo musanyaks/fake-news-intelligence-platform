@@ -4,7 +4,6 @@ import json
 from typing import Optional
 
 from kafka import KafkaProducer
-
 from src.ingestion.schemas import NewsArticle
 from src.utils.config import get_config
 from src.utils.logger import get_logger
