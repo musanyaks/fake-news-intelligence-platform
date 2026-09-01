@@ -17,14 +17,20 @@ def mock_pipeline():
         "confidence": 0.95,
         "probabilities": {"REAL": 0.95, "FAKE": 0.05},
     }
-    mock.predict_batch.return_value = [
-        {
-            "prediction": 0,
-            "label": "REAL",
-            "confidence": 0.95,
-            "probabilities": {"REAL": 0.95, "FAKE": 0.05},
-        }
-    ]
+   mock.predict_batch.return_value = [
+    {
+        "prediction": 0,
+        "label": "REAL",
+        "confidence": 0.95,
+        "probabilities": {"REAL": 0.95, "FAKE": 0.05},
+    },
+    {
+        "prediction": 1,
+        "label": "FAKE",
+        "confidence": 0.88,
+        "probabilities": {"REAL": 0.12, "FAKE": 0.88},
+    },
+]
     with patch("api.routes.prediction.get_pipeline", return_value=mock):
         yield mock
 
