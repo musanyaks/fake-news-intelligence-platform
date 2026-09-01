@@ -83,7 +83,11 @@ class NewsScraper:
         title_text = title.get_text(strip=True) if title else ""
 
         article_body = soup.find("article") or soup.find("main") or soup.find("body")
-        content = article_body.get_text(separator="\n", strip=True) if article_body else doc.extracted_text
+        content = (
+            article_body.get_text(separator="\n", strip=True)
+            if article_body
+            else doc.extracted_text
+        )
 
         return NewsArticle(
             id=hashlib.md5(url.encode()).hexdigest(),

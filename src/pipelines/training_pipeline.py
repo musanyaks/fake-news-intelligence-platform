@@ -125,7 +125,7 @@ class TrainingPipeline:
                 tfidf["results"]["probabilities"],
             )
 
-            transformer = self.train_transformer(
+            self.train_transformer(
                 train_df["text"].tolist(),
                 train_df["label"].tolist(),
                 val_df["text"].tolist(),

@@ -45,14 +45,6 @@ data/processed/*
 !data/interim/.gitkeep
 !data/processed/.gitkeep
 
-# Models
-models/
-*.pkl
-*.joblib
-*.pt
-*.pth
-*.h5
-*.onnx
 
 # Logs
 logs/
@@ -103,3 +95,9 @@ htmlcov/
 
 # Documentation build
 docs/_build/
+models/
+data/
+liar_dataset/
+*.zip
+logs/
+__pycache__/

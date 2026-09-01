@@ -1,0 +1,174 @@
+diff --git a/.flake8 b/.flake8
+new file mode 100644
+index 0000000..185b42c
+--- /dev/null
++++ b/.flake8
+@@ -0,0 +1,4 @@
++[flake8]
++max-line-length = 100
++extend-ignore = E203, W503
++exclude = .git,__pycache__,build,dist,*.egg-info,liar_dataset
+diff --git a/api/routes/prediction.py b/api/routes/prediction.py
+index 695e4e1..dd66bd8 100644
+--- a/api/routes/prediction.py
++++ b/api/routes/prediction.py
+@@ -1,6 +1,4 @@
+ """Prediction endpoints."""
+-from typing import List
+-
+ from fastapi import APIRouter, HTTPException
+ 
+ from api.schemas.prediction import BatchPredictionRequest, PredictionRequest, PredictionResponse
+diff --git a/api/schemas/prediction.py b/api/schemas/prediction.py
+index 14b694d..cbc15df 100644
+--- a/api/schemas/prediction.py
++++ b/api/schemas/prediction.py
+@@ -5,7 +5,9 @@ from pydantic import BaseModel, Field
+ 
+ 
+ class PredictionRequest(BaseModel):
+-    text: str = Field(..., min_length=10, max_length=10000, description="News article text to analyze")
++    text: str = Field(
++        ..., min_length=10, max_length=10000, description="News article text to analyze"
++    )
+ 
+ 
+ class BatchPredictionRequest(BaseModel):
+diff --git a/src/explainability/shap_explainer.py b/src/explainability/shap_explainer.py
+index 5f713d8..298af15 100644
+--- a/src/explainability/shap_explainer.py
++++ b/src/explainability/shap_explainer.py
+@@ -1,6 +1,4 @@
+ """SHAP-based explainability."""
+-from typing import List
+-
+ import numpy as np
+ 
+ 
+@@ -11,7 +9,11 @@ class ShapExplainer:
+         self.model = model
+         try:
+             import shap
+-            self.explainer = shap.Explainer(model, background_data) if background_data else shap.Explainer(model)
++            self.explainer = (
++                shap.Explainer(model, background_data)
++                if background_data
++                else shap.Explainer(model)
++            )
+         except ImportError:
+             self.explainer = None
+ 
+diff --git a/src/ingestion/kafka_producer.py b/src/ingestion/kafka_producer.py
+index 6e971ac..fa8e7b6 100644
+--- a/src/ingestion/kafka_producer.py
++++ b/src/ingestion/kafka_producer.py
+@@ -16,7 +16,9 @@ class ArticleProducer:
+ 
+     def __init__(self, bootstrap_servers: Optional[str] = None, topic: Optional[str] = None):
+         config = get_config()
+-        self.bootstrap_servers = bootstrap_servers or config.get("ingestion.kafka.bootstrap_servers", "localhost:9092")
++        self.bootstrap_servers = bootstrap_servers or config.get(
++            "ingestion.kafka.bootstrap_servers", "localhost:9092"
++        )
+         self.topic = topic or config.get("ingestion.kafka.topic", "news-articles")
+ 
+         self.producer = KafkaProducer(
+@@ -38,7 +40,8 @@ class ArticleProducer:
+             )
+             record_metadata = future.get(timeout=10)
+             logger.debug(
+-                f"Sent article to {record_metadata.topic} partition {record_metadata.partition} offset {record_metadata.offset}"
++                f"Sent article to {record_metadata.topic} "
++                f"partition {record_metadata.partition} offset {record_metadata.offset}"
+             )
+         except Exception as e:
+             logger.error(f"Failed to send article to Kafka: {e}")
+diff --git a/src/ingestion/news_scraper.py b/src/ingestion/news_scraper.py
+index a162596..4b9c7b4 100644
+--- a/src/ingestion/news_scraper.py
++++ b/src/ingestion/news_scraper.py
+@@ -83,7 +83,11 @@ class NewsScraper:
+         title_text = title.get_text(strip=True) if title else ""
+ 
+         article_body = soup.find("article") or soup.find("main") or soup.find("body")
+-        content = article_body.get_text(separator="\n", strip=True) if article_body else doc.extracted_text
++        content = (
++            article_body.get_text(separator="\n", strip=True)
++            if article_body
++            else doc.extracted_text
++        )
+ 
+         return NewsArticle(
+             id=hashlib.md5(url.encode()).hexdigest(),
+diff --git a/src/pipelines/batch_pipeline.py b/src/pipelines/batch_pipeline.py
+index 5203a06..a46ae93 100644
+--- a/src/pipelines/batch_pipeline.py
++++ b/src/pipelines/batch_pipeline.py
+@@ -1,6 +1,4 @@
+ """Batch processing pipeline for large datasets."""
+-from typing import List
+-
+ import pandas as pd
+ 
+ from src.pipelines.inference_pipeline import InferencePipeline
+diff --git a/src/pipelines/training_pipeline.py b/src/pipelines/training_pipeline.py
+index 575bf47..e06315b 100644
+--- a/src/pipelines/training_pipeline.py
++++ b/src/pipelines/training_pipeline.py
+@@ -125,7 +125,7 @@ class TrainingPipeline:
+                 tfidf["results"]["probabilities"],
+             )
+ 
+-            transformer = self.train_transformer(
++            self.train_transformer(
+                 train_df["text"].tolist(),
+                 train_df["label"].tolist(),
+                 val_df["text"].tolist(),
+diff --git a/src/preprocessing/cleaner.py b/src/preprocessing/cleaner.py
+index 3723d54..506c3a1 100644
+--- a/src/preprocessing/cleaner.py
++++ b/src/preprocessing/cleaner.py
+@@ -1,7 +1,6 @@
+ """Text cleaning utilities."""
+ import re
+ import string
+-from typing import Optional
+ 
+ from bs4 import BeautifulSoup
+ 
+diff --git a/src/preprocessing/normalizer.py b/src/preprocessing/normalizer.py
+index 22b1501..8ce95b2 100644
+--- a/src/preprocessing/normalizer.py
++++ b/src/preprocessing/normalizer.py
+@@ -1,5 +1,4 @@
+ """Text normalization utilities."""
+-import re
+ import unicodedata
+ 
+ 
+diff --git a/tests/api/test_api.py b/tests/api/test_api.py
+index 1abdf32..db5c4e1 100644
+--- a/tests/api/test_api.py
++++ b/tests/api/test_api.py
+@@ -15,7 +15,9 @@ def test_health():
+ def test_predict():
+     response = client.post(
+         "/api/v1/predict",
+-        json={"text": "This is a test news article with enough length to pass validation requirements."},
++        json={
++            "text": "This is a test news article with enough length to pass validation."
++        },
+     )
+     assert response.status_code == 200
+     assert "prediction" in response.json()
+diff --git a/tests/unit/test_preprocessing.py b/tests/unit/test_preprocessing.py
+index 98745a0..82c6cf4 100644
+--- a/tests/unit/test_preprocessing.py
++++ b/tests/unit/test_preprocessing.py
+@@ -1,6 +1,4 @@
+ """Unit tests for preprocessing."""
+-import pytest
+-
+ from src.preprocessing.cleaner import TextCleaner
+ from src.preprocessing.normalizer import TextNormalizer
+ 

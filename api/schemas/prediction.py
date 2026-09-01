@@ -5,7 +5,9 @@ from pydantic import BaseModel, Field
 
 
 class PredictionRequest(BaseModel):
-    text: str = Field(..., min_length=10, max_length=10000, description="News article text to analyze")
+    text: str = Field(
+        ..., min_length=10, max_length=10000, description="News article text to analyze"
+    )
 
 
 class BatchPredictionRequest(BaseModel):

@@ -1,6 +1,4 @@
 """SHAP-based explainability."""
-from typing import List
-
 import numpy as np
 
 
@@ -11,7 +9,11 @@ class ShapExplainer:
         self.model = model
         try:
             import shap
-            self.explainer = shap.Explainer(model, background_data) if background_data else shap.Explainer(model)
+            self.explainer = (
+                shap.Explainer(model, background_data)
+                if background_data
+                else shap.Explainer(model)
+            )
         except ImportError:
             self.explainer = None
 

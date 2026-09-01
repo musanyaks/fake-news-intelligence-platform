@@ -16,7 +16,9 @@ class ArticleProducer:
 
     def __init__(self, bootstrap_servers: Optional[str] = None, topic: Optional[str] = None):
         config = get_config()
-        self.bootstrap_servers = bootstrap_servers or config.get("ingestion.kafka.bootstrap_servers", "localhost:9092")
+        self.bootstrap_servers = bootstrap_servers or config.get(
+            "ingestion.kafka.bootstrap_servers", "localhost:9092"
+        )
         self.topic = topic or config.get("ingestion.kafka.topic", "news-articles")
 
         self.producer = KafkaProducer(
@@ -38,7 +40,8 @@ class ArticleProducer:
             )
             record_metadata = future.get(timeout=10)
             logger.debug(
-                f"Sent article to {record_metadata.topic} partition {record_metadata.partition} offset {record_metadata.offset}"
+                f"Sent article to {record_metadata.topic} "
+                f"partition {record_metadata.partition} offset {record_metadata.offset}"
             )
         except Exception as e:
             logger.error(f"Failed to send article to Kafka: {e}")

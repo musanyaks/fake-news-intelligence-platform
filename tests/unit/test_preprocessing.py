@@ -1,6 +1,4 @@
 """Unit tests for preprocessing."""
-import pytest
-
 from src.preprocessing.cleaner import TextCleaner
 from src.preprocessing.normalizer import TextNormalizer
 

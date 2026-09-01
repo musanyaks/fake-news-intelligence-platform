@@ -1,7 +1,6 @@
 """Text cleaning utilities."""
 import re
 import string
-from typing import Optional
 
 from bs4 import BeautifulSoup
 

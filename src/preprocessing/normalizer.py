@@ -1,5 +1,4 @@
 """Text normalization utilities."""
-import re
 import unicodedata
 
 
