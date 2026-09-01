@@ -1,6 +1,5 @@
 """Model calibration utilities."""
 import numpy as np
-from sklearn.calibration import CalibratedClassifierCV
 from sklearn.isotonic import IsotonicRegression
 
 

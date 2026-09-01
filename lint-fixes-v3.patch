@@ -1,0 +1,32 @@
+diff --git a/.flake8 b/.flake8
+new file mode 100644
+index 0000000..185b42c
+--- /dev/null
++++ b/.flake8
+@@ -0,0 +1,4 @@
++[flake8]
++max-line-length = 100
++extend-ignore = E203, W503
++exclude = .git,__pycache__,build,dist,*.egg-info,liar_dataset
+diff --git a/src/models/calibration.py b/src/models/calibration.py
+index c67231d..1bf8a84 100644
+--- a/src/models/calibration.py
++++ b/src/models/calibration.py
+@@ -1,6 +1,5 @@
+ """Model calibration utilities."""
+ import numpy as np
+-from sklearn.calibration import CalibratedClassifierCV
+ from sklearn.isotonic import IsotonicRegression
+ 
+ 
+diff --git a/src/models/ensemble.py b/src/models/ensemble.py
+index b4281a8..16307e7 100644
+--- a/src/models/ensemble.py
++++ b/src/models/ensemble.py
+@@ -1,5 +1,5 @@
+ """Ensemble model combining multiple approaches."""
+-from typing import Any, Dict,Optional
++from typing import Any, Dict, Optional
+ 
+ import numpy as np
+ 
