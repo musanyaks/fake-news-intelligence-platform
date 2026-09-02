@@ -1,1 +1,1 @@
-"TruthLens source package."
+"""TruthLens source package."""
