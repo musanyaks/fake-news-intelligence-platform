@@ -3,10 +3,8 @@ from typing import Dict, List
 
 import numpy as np
 
-from src.explainability.attention import AttentionExplainer
 from src.preprocessing.cleaner import TextCleaner
 from src.preprocessing.normalizer import TextNormalizer
-from src.models.transformer import TransformerModel
 from src.models.mock_model import MockTransformerModel
 from src.utils.logger import get_logger
 
@@ -30,6 +28,8 @@ class InferencePipeline:
             logger.info("USE_MOCK_MODEL=true - Using lightweight mock model.")
             self.model = MockTransformerModel()
         else:
+            # Lazy import to avoid loading transformers lib when using mock
+            from src.models.transformer import TransformerModel
             # Try real model first, fallback to mock (no downloads)
             try:
                 self.model = TransformerModel(model_name=model_path)
@@ -43,22 +43,25 @@ class InferencePipeline:
 
         if enable_explanation and hasattr(self.model, 'model_name') and 'mock' not in str(self.model.model_name).lower():
             try:
+                from src.explainability.attention import AttentionExplainer
                 self.explainer = AttentionExplainer(model_path)
             except Exception as e:
                 logger.warning(f"Could not load explainer: {e}")
 
-    def preprocess(self, text: str) -> str:
-        text = self.normalizer.normalize(text)
-        text = self.cleaner.clean(text)
-        return text
-
     def predict(self, text: str) -> Dict:
-        processed = self.preprocess(text)
+        processed = self._preprocess(text)
         proba = self.model.predict_proba([processed])[0]
         prediction = int(np.argmax(proba))
         confidence = float(proba[prediction])
 
-        result = {
+        explanation = None
+        if self.explainer and self.enable_explanation:
+            try:
+                explanation = self.explainer.get_attention(processed)
+            except Exception:
+                pass
+
+        return {
             "prediction": prediction,
             "label": "FAKE" if prediction == 1 else "REAL",
             "confidence": confidence,
@@ -66,19 +69,11 @@ class InferencePipeline:
                 "REAL": float(proba[0]),
                 "FAKE": float(proba[1]),
             },
+            "explanation": explanation,
         }
 
-        if self.enable_explanation and self.explainer:
-            try:
-                explanation = self.explainer.get_top_attended_tokens(processed, top_k=5)
-                result["explanation"] = explanation
-            except Exception as e:
-                logger.warning(f"Explanation failed: {e}")
-
-        return result
-
     def predict_batch(self, texts: List[str]) -> List[Dict]:
-        processed = [self.preprocess(t) for t in texts]
+        processed = [self._preprocess(t) for t in texts]
         probas = self.model.predict_proba(processed)
 
         results = []
@@ -88,6 +83,14 @@ class InferencePipeline:
                 "prediction": prediction,
                 "label": "FAKE" if prediction == 1 else "REAL",
                 "confidence": float(proba[prediction]),
-                "probabilities": {"REAL": float(proba[0]), "FAKE": float(proba[1])},
+                "probabilities": {
+                    "REAL": float(proba[0]),
+                    "FAKE": float(proba[1]),
+                },
             })
         return results
+
+    def _preprocess(self, text: str) -> str:
+        normalized = self.normalizer.normalize(text)
+        cleaned = self.cleaner.clean(normalized)
+        return cleaned

@@ -4,7 +4,6 @@ from typing import Dict, List, Optional
 from src.claim_extraction import ClaimExtractor
 from src.evidence.fact_check import FactCheckSearcher
 from src.evidence.web_search import WebEvidenceRetriever
-from src.models.transformer import TransformerModel
 from src.models.mock_model import MockTransformerModel
 from src.scoring.calculator import TruthScoreCalculator
 from src.source_credibility import SourceRegistry
@@ -30,6 +29,8 @@ class VerificationEngine:
             logger.info("USE_MOCK_MODEL=true - Using lightweight mock model.")
             self.model = MockTransformerModel()
         else:
+            # Lazy import to avoid loading transformers lib when using mock
+            from src.models.transformer import TransformerModel
             # Try real model first, fallback to mock (no downloads)
             try:
                 self.model = TransformerModel(model_name=model_path)

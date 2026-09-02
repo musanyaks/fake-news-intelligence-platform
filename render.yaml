@@ -4,10 +4,12 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: python -m api.main
+    startCommand: PYTHONPATH=/opt/render/project/src python -m api.main
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: PYTHONPATH
+        value: /opt/render/project/src
       - key: USE_MOCK_MODEL
         value: true
       - key: GOOGLE_FACT_CHECK_API_KEY
