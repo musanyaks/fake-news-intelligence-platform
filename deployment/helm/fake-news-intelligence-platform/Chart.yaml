@@ -1,0 +1,16 @@
+apiVersion: v2
+name: fake-news-intelligence-platform
+description: A Helm chart for the Fake News Intelligence Platform
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - machine-learning
+  - fake-news
+  - nlp
+home: https://github.com/fake-news-intelligence-platform
+sources:
+  - https://github.com/fake-news-intelligence-platform
+maintainers:
+  - name: ML Team
+    email: ml-team@example.com

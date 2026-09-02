@@ -1,0 +1,49 @@
+replicaCount: 3
+
+image:
+  repository: ghcr.io/fake-news-intelligence-platform/fake-news-intelligence-platform
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: api.fakenews-intelligence.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: fakenews-tls
+      hosts:
+        - api.fakenews-intelligence.local
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+env:
+  APP_ENV: production
+  LOG_LEVEL: INFO
+
+secrets:
+  databaseUrl: ""
+  secretKey: ""

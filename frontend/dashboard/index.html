@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake News Intelligence Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .confidence-bar { transition: width 0.5s ease; }
+        .prediction-card { transition: all 0.3s ease; }
+        .prediction-card:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-900">Fake News Intelligence</h1>
+                    <span class="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">v0.1.0</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-sm text-gray-600">API Online</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Prediction Panel -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Article Analysis</h2>
+                    <textarea id="articleText" rows="8" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        placeholder="Paste news article text here..."></textarea>
+                    <div class="mt-4 flex justify-between items-center">
+                        <span id="charCount" class="text-sm text-gray-500">0 characters</span>
+                        <button onclick="analyzeArticle()" 
+                            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                            id="analyzeBtn">
+                            Analyze
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div id="resultsPanel" class="hidden bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Analysis Results</h3>
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <span id="resultLabel" class="text-2xl font-bold"></span>
+                            <span id="resultConfidence" class="ml-2 text-lg text-gray-600"></span>
+                        </div>
+                        <div id="resultBadge" class="px-4 py-2 rounded-full text-sm font-medium"></div>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-600">Real</span>
+                                <span id="probReal" class="font-medium"></span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="barReal" class="bg-green-500 h-2 rounded-full confidence-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-600">Fake</span>
+                                <span id="probFake" class="font-medium"></span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="barFake" class="bg-red-500 h-2 rounded-full confidence-bar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="explanationPanel" class="mt-4 hidden">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Key Indicators</h4>
+                        <div id="explanationTags" class="flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Panel -->
+            <div class="space-y-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">System Metrics</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Total Analyzed</span>
+                            <span id="totalAnalyzed" class="text-xl font-bold text-gray-900">--</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Avg Confidence</span>
+                            <span id="avgConfidence" class="text-xl font-bold text-gray-900">--</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600">Model Version</span>
+                            <span class="text-sm bg-gray-100 px-2 py-1 rounded">v1.0.0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+                    <div id="recentActivity" class="space-y-3">
+                        <p class="text-gray-500 text-sm">No recent activity</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8000' 
+            : 'https://api.fakenews-intelligence.local';
+
+        document.getElementById('articleText').addEventListener('input', function() {
+            document.getElementById('charCount').textContent = this.value.length + ' characters';
+        });
+
+        async function analyzeArticle() {
+            const text = document.getElementById('articleText').value;
+            if (text.length < 10) {
+                alert('Please enter at least 10 characters');
+                return;
+            }
+
+            const btn = document.getElementById('analyzeBtn');
+            btn.disabled = true;
+            btn.textContent = 'Analyzing...';
+
+            try {
+                const response = await fetch(`${API_URL}/api/v1/predict`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+
+                if (!response.ok) throw new Error('Analysis failed');
+                const data = await response.json();
+                displayResults(data);
+                addToActivity(data);
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Analyze';
+            }
+        }
+
+        function displayResults(data) {
+            const panel = document.getElementById('resultsPanel');
+            panel.classList.remove('hidden');
+
+            const isFake = data.prediction === 1;
+            const label = document.getElementById('resultLabel');
+            const badge = document.getElementById('resultBadge');
+            const confidence = document.getElementById('resultConfidence');
+
+            label.textContent = data.label;
+            label.className = `text-2xl font-bold ${isFake ? 'text-red-600' : 'text-green-600'}`;
+            
+            badge.textContent = isFake ? 'Potential Misinformation' : 'Likely Authentic';
+            badge.className = `px-4 py-2 rounded-full text-sm font-medium ${isFake ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`;
+            
+            confidence.textContent = `(${(data.confidence * 100).toFixed(1)}% confidence)`;
+
+            document.getElementById('probReal').textContent = (data.probabilities.REAL * 100).toFixed(1) + '%';
+            document.getElementById('probFake').textContent = (data.probabilities.FAKE * 100).toFixed(1) + '%';
+            
+            document.getElementById('barReal').style.width = (data.probabilities.REAL * 100) + '%';
+            document.getElementById('barFake').style.width = (data.probabilities.FAKE * 100) + '%';
+
+            if (data.explanation) {
+                document.getElementById('explanationPanel').classList.remove('hidden');
+                const tags = document.getElementById('explanationTags');
+                tags.innerHTML = data.explanation.map(e => 
+                    `<span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">${e.token} (${(e.score * 100).toFixed(0)}%)</span>`
+                ).join('');
+            }
+        }
+
+        function addToActivity(data) {
+            const container = document.getElementById('recentActivity');
+            if (container.querySelector('p')) container.innerHTML = '';
+            
+            const div = document.createElement('div');
+            div.className = 'prediction-card flex items-center justify-between p-3 bg-gray-50 rounded';
+            div.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <div class="w-2 h-2 rounded-full ${data.prediction === 1 ? 'bg-red-500' : 'bg-green-500'}"></div>
+                    <span class="text-sm font-medium">${data.label}</span>
+                </div>
+                <span class="text-xs text-gray-500">${new Date().toLocaleTimeString()}</span>
+            `;
+            container.insertBefore(div, container.firstChild);
+            if (container.children.length > 5) container.removeChild(container.lastChild);
+        }
+
+        // Load initial stats
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_URL}/api/v1/model/metrics`);
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('avgConfidence').textContent = (data.accuracy * 100).toFixed(0) + '%';
+                }
+            } catch (e) {}
+        }
+        loadStats();
+    </script>
+</body>
+</html>

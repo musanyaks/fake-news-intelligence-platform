@@ -1,0 +1,165 @@
+app:
+  name: "fake-news-intelligence-platform"
+  version: "0.1.0"
+  environment: "development"
+  debug: true
+  secret_key: "${SECRET_KEY}"
+
+paths:
+  data_dir: "data"
+  raw_dir: "data/raw"
+  interim_dir: "data/interim"
+  processed_dir: "data/processed"
+  model_dir: "models"
+  log_dir: "logs"
+  artifact_dir: "mlflow/experiments"
+
+ingestion:
+  sources:
+    - name: "rss_feeds"
+      type: "rss"
+      urls:
+        - "https://feeds.bbci.co.uk/news/rss.xml"
+        - "https://rss.cnn.com/rss/edition.rss"
+      poll_interval: 300
+    - name: "news_api"
+      type: "api"
+      endpoint: "https://newsapi.org/v2/top-headlines"
+      api_key: "${NEWS_API_KEY}"
+      poll_interval: 600
+    - name: "twitter_stream"
+      type: "streaming"
+      keywords: ["breaking", "news", "fake news"]
+  kafka:
+    bootstrap_servers: "${KAFKA_BOOTSTRAP_SERVERS}"
+    topic: "news-articles"
+    consumer_group: "fake-news-consumer"
+    batch_size: 100
+    flush_interval: 30
+
+preprocessing:
+  text:
+    lowercase: true
+    remove_urls: true
+    remove_emails: true
+    remove_mentions: true
+    remove_hashtags: false
+    remove_punctuation: false
+    remove_numbers: false
+    remove_extra_whitespace: true
+    remove_stopwords: false
+    min_token_length: 2
+    max_token_length: 50
+  html:
+    strip_tags: true
+    extract_text_only: true
+  language:
+    detect_language: true
+    filter_languages: ["en"]
+    confidence_threshold: 0.9
+
+features:
+  linguistic:
+    enabled: true
+    features:
+      - readability_scores
+      - lexical_diversity
+      - syntactic_complexity
+      - punctuation_stats
+      - capitalization_stats
+      - sentence_stats
+  sentiment:
+    enabled: true
+    features:
+      - vader_sentiment
+      - textblob_sentiment
+      - emotion_detection
+  metadata:
+    enabled: true
+    features:
+      - source_credibility
+      - author_history
+      - publication_patterns
+      - social_engagement
+  ngram:
+    enabled: true
+    max_n: 3
+    max_features: 5000
+  tfidf:
+    enabled: true
+    max_features: 10000
+    ngram_range: [1, 2]
+    min_df: 2
+    max_df: 0.95
+  word_embeddings:
+    enabled: true
+    model: "glove-wiki-gigaword-100"
+    aggregation: "mean"
+
+training:
+  test_size: 0.2
+  validation_size: 0.1
+  random_state: 42
+  stratify: true
+  cross_validation:
+    enabled: true
+    n_splits: 5
+    shuffle: true
+  hyperparameter_tuning:
+    enabled: true
+    method: "optuna"
+    n_trials: 100
+    timeout: 3600
+    direction: "maximize"
+    metric: "f1_macro"
+  early_stopping:
+    enabled: true
+    patience: 5
+    min_delta: 0.001
+    monitor: "val_f1"
+  checkpointing:
+    enabled: true
+    save_best_only: true
+    monitor: "val_f1"
+    mode: "max"
+
+inference:
+  batch_size: 32
+  max_sequence_length: 512
+  confidence_threshold: 0.7
+  enable_explanation: true
+  explanation_method: "shap"
+  cache_predictions: true
+  cache_ttl: 3600
+
+monitoring:
+  drift_detection:
+    enabled: true
+    method: "evidently"
+    reference_data_path: "data/processed/reference.parquet"
+    check_interval: 86400
+    metrics:
+      - "data_drift"
+      - "prediction_drift"
+      - "concept_drift"
+  performance_monitoring:
+    enabled: true
+    metrics:
+      - latency
+      - throughput
+      - error_rate
+      - prediction_distribution
+  alerting:
+    enabled: true
+    channels:
+      - type: "email"
+        recipients: ["admin@example.com"]
+      - type: "slack"
+        webhook_url: "${SLACK_WEBHOOK_URL}"
+    conditions:
+      - metric: "accuracy"
+        threshold: 0.85
+        operator: "less_than"
+      - metric: "latency_p99"
+        threshold: 500
+        operator: "greater_than"
