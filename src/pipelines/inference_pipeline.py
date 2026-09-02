@@ -5,7 +5,7 @@ import numpy as np
 
 from src.preprocessing.cleaner import TextCleaner
 from src.preprocessing.normalizer import TextNormalizer
-from models.mock_model import MockTransformerModel
+from src.models.mock_model import MockTransformerModel
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
